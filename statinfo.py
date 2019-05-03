@@ -3,26 +3,6 @@ import itertools
 import collections
 
 
-__name__ = "statinfo"
-__all__ = ["tuplize", "singleinf", "probability",
-           "entropy", "mutualinfo", "multinfo"]
-
-
-def tuplize(L):
-    """
-    Convert input data in tuple,
-    A tuple is needed because it is hashable,
-    so they can be used keys in the dict
-    of probability() function
-    """
-    try:
-        iter(L)
-    except TypeError:
-        return L
-    else:
-        return tuple(tuplize(t) for t in L)
-
-
 def singleinf(x):
     """ Calculate a single term of average entropy"""
     return -x * log(x, 2)
@@ -30,28 +10,23 @@ def singleinf(x):
 
 def probability(LT, as_fraction=False):
     """
-    This function calculate probabilityi of single events
+    This function calculates probability of single events
     or joint probability of multiple events in data series
     (a procedure also known as Maximum Likelihood (ML)
     probabilities or frequencies estimation).
-    As input LT we can have an array
-    or a matrix with dimensions [m x n],
-    where m = samples nr.
-    and n = nr. of variables(or dimensions) of samples.
+    As input LT we expect an array or a matrix [m x n],
+    where m = samples nr and n = nr of samples variables(or dimensions).
     LT should be shaped ([var1,var2,...,varn],
                          ...[i-th sample],...).
     Set as_fraction=True to get fractions in reduced form
     (slower than floats)
     """
-    L = tuplize(LT) if hasattr(LT[0], '__iter__') else LT
-    probdict = collections.defaultdict(int)
-    for i in L:
-        probdict[i] += 1
-    l = len(L)
+    probdict = collections.Counter(LT)
+    l = len(LT)
     if as_fraction:
         from fractions import Fraction
-        return (Fraction(v, l) for v in probdict.itervalues())
-    return (v / float(l) for v in probdict.itervalues())
+        return tuple(Fraction(v, l) for v in probdict.values())
+    return tuple(v / l for v in probdict.values())
 
 
 def entropy(L, k=1):
@@ -65,8 +40,7 @@ def entropy(L, k=1):
     if k < 1:
         raise ValueError("k [%s] has to be positive" % k)
     if k > 1:
-        return entropy([L[i:i + k]
-                        for i in xrange(len(L) - k + 1)]) / k
+        return entropy([L[i:i + k] for i in range(len(L) - k + 1)]) / k
     return sum(map(singleinf, probability(L)))
 
 
